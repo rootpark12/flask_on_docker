@@ -1,0 +1,124 @@
+###########
+# BUILDER #
+###########
+
+# pull official base image
+FROM python:3.9.5-slim-buster as builder
+# FROM qgis/qgis as builder
+
+# set work directory
+WORKDIR /usr/src/app
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc
+# RUN apt install -y gnupg software-properties-common
+# RUN wget -qO - https://qgis.org/downloads/qgis-2021.gpg.key | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/qgis-archive.gpg --import
+# RUN chmod a+r /etc/apt/trusted.gpg.d/qgis-archive.gpg
+# RUN add-apt-repository "deb https://qgis.org/ubuntu $(lsb_release -c -s) main"
+# RUN apt update
+RUN apt-get install -y qgis
+RUN apt-get install -y qgis-server
+RUN apt-get install -y python-qgis
+RUN apt-get install -y qgis-plugin-grass
+# RUN export PYTHONPATH=/usr/share/qgis/python
+# RUN export LD_LIBRARY_PATH=/usr/share/qgis/python
+# RUN apt-get update \
+#     && apt-get install --no-install-recommends --no-install-suggests --allow-unauthenticated -y \
+#         gnupg \
+#         ca-certificates \
+#         wget \
+#         locales \
+#     && localedef -i en_US -f UTF-8 en_US.UTF-8 \
+#     # Add the current key for package downloading - As the key changes every year at least
+#     # Please refer to QGIS install documentation and replace it with the latest one
+#     && wget -O - https://qgis.org/downloads/qgis-2020.gpg.key | gpg --import \
+#     && gpg --export --armor F7E06F06199EF2F2 | apt-key add - \
+#     && echo "deb http://qgis.org/debian buster main" >> /etc/apt/sources.list.d/qgis.list \
+#     && apt-get update \
+#     && apt-get install --no-install-recommends --no-install-suggests --allow-unauthenticated -y \
+#         qgis-server \
+#         spawn-fcgi \
+#         xauth \
+#         xvfb \
+#     && apt-get remove --purge -y \
+#         gnupg \
+#         wget \
+#     && rm -rf /var/lib/apt/lists/*
+
+# RUN useradd -m qgis
+
+# ENV TINI_VERSION v0.17.0
+# ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+# RUN chmod +x /tini
+
+# ENV QGIS_PREFIX_PATH /usr
+# ENV QGIS_SERVER_LOG_STDERR 1
+# ENV QGIS_SERVER_LOG_LEVEL 2
+
+# COPY cmd.sh /home/qgis/cmd.sh
+# RUN chmod -R 777 /home/qgis/cmd.sh
+# RUN chown qgis:qgis /home/qgis/cmd.sh
+
+
+
+# lint
+RUN pip install --upgrade pip
+RUN pip install flake8==3.9.1
+COPY . /usr/src/app/
+RUN flake8 --ignore=E501,F401 .
+
+# RUN pip install qgis-plugins
+RUN pip install qgis-plugin-ci
+RUN pip install py-qgis-server
+
+
+# install python dependencies
+COPY ./requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+
+
+#########
+# FINAL #
+#########
+
+# pull official base image
+FROM python:3.9.5-slim-buster
+
+# create directory for the app user
+RUN mkdir -p /home/app
+
+# create the app user
+RUN addgroup --system app && adduser --system --group app
+
+# create the appropriate directories
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/web
+RUN mkdir $APP_HOME
+WORKDIR $APP_HOME
+
+# install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends netcat
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+
+# copy entrypoint-prod.sh
+COPY ./entrypoint.prod.sh $APP_HOME
+
+# copy project
+COPY . $APP_HOME
+
+# chown all the files to the app user
+RUN chown -R app:app $APP_HOME
+
+# change to the app user
+USER app
+
+# run entrypoint.prod.sh
+ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
