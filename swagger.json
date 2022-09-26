@@ -1,0 +1,169 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "This is sample server of Spacement.  ",
+    "version": "1.0.0",
+    "title": "Spacement API"
+  },
+  "host": "https://gis-service-doc.herokuapp.com",
+  "tags": [
+    {
+      "name": "location",
+      "description": ""
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "/add": {
+      "post": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Add a lcoation to database",
+        "description": "",
+        "operationId": "addLocation",
+        "consumes": [
+          "application/json",
+          "application/xml"
+        ],
+        "produces": [
+          "application/xml",
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Location"
+            }
+          }
+        ],
+        "responses": {
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/remove/{id}": {
+      "delete": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Delete location",
+        "description": "",
+        "operationId": "deleteLocation",
+        "produces": [
+          "application/xml",
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The name that needs to be deleted",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/edit/{id}": {
+      "patch": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Update location",
+        "description": "",
+        "operationId": "UpdateLocation",
+        "produces": [
+          "application/xml",
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "petstore_auth": {
+      "type": "oauth2",
+      "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+      "flow": "implicit",
+      "scopes": {
+        "write:pets": "modify pets in your account",
+        "read:pets": "read your pets"
+      }
+    },
+    "api_key": {
+      "type": "apiKey",
+      "name": "api_key",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "Location": {
+      "type": "object",
+      "required": [
+        "latitude",
+        "longitude",
+        "title",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "latitude": {
+          "type": "number",
+          "example": 52.520008
+        },
+        "longitude": {
+          "type": "number",
+          "example": 13.404954
+        },
+        "title": {
+          "type": "string",
+          "example": "Berlin"
+        },
+        "description": {
+          "type": "string",
+          "example": "Capital city of Germany"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "Find out more about Swagger",
+    "url": "http://swagger.io"
+  }
+}
